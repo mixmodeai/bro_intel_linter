@@ -6,6 +6,8 @@
 # 3-4-2015      Initial development                                Aaron Eppert
 # 8-24-2015     Explicitly verify single character fields          Aaron Eppert
 # 8-24-2015     GPL and pushed to GitHub                           Aaron Eppert
+# 8-25-2015     Small cleanups and proper exit codes for using
+#               as a git pre-commit hook                           Aaron Eppert
 #
 import sys
 import re
@@ -32,17 +34,13 @@ class bro_intel_feed_verifier:
     feed_rx = r'([\S]+)'
     feed_sep_rx = r'(\t)+'
 
-    def __init__(self):
-        self.__feed_contents = []
+    def __init__(self, feed_file):
+        self.feed_file = feed_file
         self.__feed_header_found = False
         self.__num_of_fields = 0
 
-    def load_feed(self, feed):
-        with open(feed) as f:
-            for line in f:
-                t_line = line.rstrip('\n')
-                if len(t_line):
-                    self.__feed_contents.append(t_line)
+    def __make_one_indexed(self, l):
+        return map(lambda x: x+1, l)
 
     def __is_start_of_feed(self, l):
         ret = False
@@ -84,7 +82,7 @@ class bro_intel_feed_verifier:
 
         r = [i for i, x in enumerate(l) if x == ' ']
         if len(r) > 0:
-            warning_line(offset, 'Invalid empty field, offset %s' % (r))
+            warning_line(offset, 'Invalid empty field, offset %s' % (self.__make_one_indexed(r)))
             ret = False
         return ret
 
@@ -93,7 +91,7 @@ class bro_intel_feed_verifier:
         ret = True
         r = [i for i, x in enumerate(l) if (len(x) == 1 and x not in val)]
         if len(r) > 0:
-            warning_line(offset, 'Invalid single character field entry, offset %s' % (r))
+            warning_line(offset, 'Invalid single character field entry, offset %s' % (self.__make_one_indexed(r)))
             ret = False
         return ret
 
@@ -115,7 +113,7 @@ class bro_intel_feed_verifier:
         for index, item in enumerate(field_seps):
             for s in item:
                 if s != '\t':
-                    warning_line(offset, 'Field separator incorrect in field offset %d' % (index))
+                    warning_line(offset, 'Field separator incorrect in field offset %d' % (self.__make_one_indexed(index)))
                     ret = False
         return ret
 
@@ -145,15 +143,23 @@ class bro_intel_feed_verifier:
                          (len(contents), self.__num_of_fields))
         return ret
 
+    def __load_feed(self, feed):
+        with open(feed) as f:
+            for line in f:
+                t_line = line.rstrip('\n')
+                if len(t_line):
+                    yield t_line
+
     def verify(self):
-        for index, l in enumerate(self.__feed_contents):
+        for index, l in enumerate(self.__load_feed(self.feed_file)):
             # Check the header
             if index == 0:
                 if not self.__verify_header(index, l):
                     warning_line(index, "Invalid header")
-                    break
+                    sys.exit(2)
             else:
-                self.__verify_entry(index, l)
+                if not self.__verify_entry(index, l):
+                    sys.exit(3)
 
 
 def main():
@@ -167,8 +173,7 @@ def main():
             parser.print_help()
             sys.exit(1)
 
-    bifv = bro_intel_feed_verifier()
-    bifv.load_feed(options.feed_file)
+    bifv = bro_intel_feed_verifier(options.feed_file)
     bifv.verify()
 
 if __name__ == '__main__':
