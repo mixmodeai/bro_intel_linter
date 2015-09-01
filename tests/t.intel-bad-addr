@@ -1,0 +1,5 @@
+#fields	indicator	indicator_type	meta.source	meta.desc	meta.url	meta.do_notice	meta.if_in	meta.whitelist	meta.severity
+192.168.1.1	Intel::ADDR	my imagination	ADDR	-	F	-	-	6
+192.168.1.2	Intel::ADDR	my imagination	ADDR	-	F	-	-	6
+192.168.1.300	Intel::ADDR	my imagination	ADDR	-	F	-	-	6
+

@@ -1,0 +1,5 @@
+#fields	indicator	indicator_type	meta.source	meta.desc	meta.url	meta.do_notice	meta.if_in	meta.whitelist	meta.severity	meta.bob
+my.domain.com	Intel::DOMAIN	domain	DOMAIN	-	F	-	-	6	bob
+your.com	Intel::DOMAIN	domain	DOMAIN	-	F	-	-	6	bob
+other.domain.com	Intel::DOMAIN	domain	DOMAIN	-	F	-	-	6	bob
+
