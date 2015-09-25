@@ -8,10 +8,12 @@
 # 8-24-2015     GPL and pushed to GitHub                           Aaron Eppert
 # 8-25-2015     Small cleanups and proper exit codes for using
 #               as a git pre-commit hook                           Aaron Eppert
-# 9-1-2015     Added column-based type verifications               Aaron Eppert
+# 9-1-2015      Added column-based type verifications              Aaron Eppert
+# 9-25-2015     Verify printable characters and escape in error    Aaron Eppert
 #
 import sys
 import re
+import string
 from optparse import OptionParser
 
 
@@ -24,6 +26,22 @@ def warning_line(line, *objs):
     for o in objs:
         out += o
     warning(out)
+
+
+def escape(c):
+    if ord(c) > 31 and ord(c) < 127:
+        return c
+    c = ord(c)
+    if c <= 0xff:
+        return r'\x{0:02x}'.format(c)
+    elif c <= '\uffff':
+        return r'\u{0:04x}'.format(c)
+    else:
+        return r'\U{0:08x}'.format(c)
+
+
+def hex_escape(s):
+    return ''.join(escape(c) for c in s)
 
 ###############################################################################
 # class bro_intel_indicator_type
@@ -189,7 +207,7 @@ class bro_data_intel_field_values:
 
     def verify_indicator(self, t):
         ret = False
-        if len(t) > 1:
+        if len(t) > 1 and all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in t):
             ret = True
         return ret
 
@@ -219,7 +237,7 @@ class bro_data_intel_field_values:
         ret = False
         if self.__is_ignore_field(t):
             ret = True
-        elif len(t) > 1:
+        elif len(t) > 1 and all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in t):
             ret = True
         return ret
 
@@ -227,7 +245,7 @@ class bro_data_intel_field_values:
         ret = False
         if self.__is_ignore_field(t):
             ret = True
-        elif len(t) > 1:
+        elif len(t) > 1 and all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in t):
             ret = True
         return ret
 
@@ -235,7 +253,7 @@ class bro_data_intel_field_values:
         ret = False
         if self.__is_ignore_field(t):
             ret = True
-        elif len(t) > 1:
+        elif len(t) > 1 and all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in t):
             ret = True
         return ret
 
@@ -243,7 +261,7 @@ class bro_data_intel_field_values:
         ret = False
         if self.__is_ignore_field(t):
             ret = True
-        elif len(t) > 1:
+        elif len(t) > 1 and all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in t):
             ret = True
         return ret
 
@@ -268,7 +286,7 @@ class bro_data_intel_field_values:
         ret = False
         if self.__is_ignore_field(t):
             ret = True
-        elif len(t) > 1:
+        elif len(t) > 1 and all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in t):
             ret = True
         return ret
 
@@ -277,7 +295,7 @@ class bro_data_intel_field_values:
         warning("Running default handler for: %s" % (t))
         if self.__is_ignore_field(t):
             ret = True
-        elif len(t) > 1:
+        elif len(t) > 1 and all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in t):
             ret = True
         return ret
 
@@ -402,8 +420,17 @@ class bro_intel_feed_verifier:
 
         for k in _fields_to_process:
             r = validator.get_verifier(k)(_fields_to_process[k])
+
             if not r:
-                warning_line(index, 'Invalid entry \"%s\" for column \"%s\"' % (_fields_to_process[k], k))
+                if all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in k):
+                    if len(_fields_to_process[k]) == 1:
+                        warning_line(index, 'Invalid entry - character 0x%X found for column \"%s\"' % (ord(_fields_to_process[k]), str(k)))
+                    else:
+                        t_line = str(_fields_to_process[k])
+                        t_line = hex_escape(t_line)
+                        warning_line(index, 'Invalid entry \"%s\" for column \"%s\"' % (str(t_line), str(k)))
+                else:
+                    warning_line(index, 'Unprintable character found for column \"%s\"' % (str(k)))
                 ret = False
                 break
 
