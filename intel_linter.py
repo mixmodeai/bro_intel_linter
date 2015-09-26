@@ -43,6 +43,7 @@ def escape(c):
 def hex_escape(s):
     return ''.join(escape(c) for c in s)
 
+
 ###############################################################################
 # class bro_intel_indicator_type
 #
@@ -299,6 +300,7 @@ class bro_data_intel_field_values:
             ret = True
         return ret
 
+
 ###############################################################################
 # class bro_intel_feed_verifier
 #
@@ -423,12 +425,9 @@ class bro_intel_feed_verifier:
 
             if not r:
                 if all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in k):
-                    if len(_fields_to_process[k]) == 1:
-                        warning_line(index, 'Invalid entry - character 0x%X found for column \"%s\"' % (ord(_fields_to_process[k]), str(k)))
-                    else:
-                        t_line = str(_fields_to_process[k])
-                        t_line = hex_escape(t_line)
-                        warning_line(index, 'Invalid entry \"%s\" for column \"%s\"' % (str(t_line), str(k)))
+                    t_line = str(_fields_to_process[k])
+                    t_line = hex_escape(t_line)
+                    warning_line(index, 'Invalid entry \"%s\" for column \"%s\"' % (str(t_line), str(k)))
                 else:
                     warning_line(index, 'Unprintable character found for column \"%s\"' % (str(k)))
                 ret = False
@@ -480,6 +479,7 @@ class bro_intel_feed_verifier:
             else:
                 if not self.__verify_entry(index, l):
                     sys.exit(3)
+
 
 ###############################################################################
 # main()
