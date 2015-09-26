@@ -203,12 +203,15 @@ class bro_data_intel_field_values:
     def get_verifier(self, v):
         return self.__VERIFY.get(v, self.default)
 
+    def __verify_chars(self, t):
+        return all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in t)
+
     def __is_ignore_field(self, t):
         return self.EMPTY_FIELD_CHAR in t
 
     def verify_indicator(self, t):
         ret = False
-        if len(t) > 1 and all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in t):
+        if len(t) > 1 and self.__verify_chars(t):
             ret = True
         return ret
 
@@ -238,7 +241,7 @@ class bro_data_intel_field_values:
         ret = False
         if self.__is_ignore_field(t):
             ret = True
-        elif len(t) > 1 and all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in t):
+        elif len(t) > 1 and self.__verify_chars(t):
             ret = True
         return ret
 
@@ -246,7 +249,7 @@ class bro_data_intel_field_values:
         ret = False
         if self.__is_ignore_field(t):
             ret = True
-        elif len(t) > 1 and all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in t):
+        elif len(t) > 1 and self.__verify_chars(t):
             ret = True
         return ret
 
@@ -254,7 +257,7 @@ class bro_data_intel_field_values:
         ret = False
         if self.__is_ignore_field(t):
             ret = True
-        elif len(t) > 1 and all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in t):
+        elif len(t) > 1 and self.__verify_chars(t):
             ret = True
         return ret
 
@@ -262,7 +265,7 @@ class bro_data_intel_field_values:
         ret = False
         if self.__is_ignore_field(t):
             ret = True
-        elif len(t) > 1 and all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in t):
+        elif len(t) > 1 and self.__verify_chars(t):
             ret = True
         return ret
 
@@ -287,7 +290,7 @@ class bro_data_intel_field_values:
         ret = False
         if self.__is_ignore_field(t):
             ret = True
-        elif len(t) > 1 and all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in t):
+        elif len(t) > 1 and self.__verify_chars(t):
             ret = True
         return ret
 
@@ -296,7 +299,7 @@ class bro_data_intel_field_values:
         warning("Running default handler for: %s" % (t))
         if self.__is_ignore_field(t):
             ret = True
-        elif len(t) > 1 and all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in t):
+        elif len(t) > 1 and self.__verify_chars(t):
             ret = True
         return ret
 
