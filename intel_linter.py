@@ -281,7 +281,7 @@ class bro_data_intel_field_values:
 
     def verify_meta_cif_severity(self, t):
         ret = False
-        VALID_SEVERITY = ['low', 'medium', 'med', 'high']
+        VALID_SEVERITY = ['-', 'low', 'medium', 'med', 'high']
         if t in VALID_SEVERITY:
             ret = True
         return ret
