@@ -231,7 +231,7 @@ class bro_data_intel_field_values:
         ret = False
         try:
             t_int = int(t)
-            if isinstance(t_int, (int, long)) and (t_int > 0 and t_int < 10):
+            if isinstance(t_int, (int, long)) and (t_int > 0 and t_int < 100):
                 ret = True
         except ValueError:
             ret = False
