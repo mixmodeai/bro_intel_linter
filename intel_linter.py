@@ -10,6 +10,7 @@
 #               as a git pre-commit hook                           Aaron Eppert
 # 9-1-2015      Added column-based type verifications              Aaron Eppert
 # 9-25-2015     Verify printable characters and escape in error    Aaron Eppert
+# 10-7-2015     Added --psled and --warn-only options              Aaron Eppert
 #
 import sys
 import re
@@ -59,7 +60,7 @@ class bro_intel_indicator_type:
                                          'Intel::DOMAIN':       self.__handle_intel_domain,
                                          'Intel::USER_NAME':    self.__handle_intel_user_name,
                                          'Intel::FILE_HASH':    self.__handle_intel_file_hash,
-                                         'Intel::FILE_NAME':    self.__handle_intel_file_hash,
+                                         'Intel::FILE_NAME':    self.__handle_intel_file_name,
                                          'Intel::CERT_HASH':    self.__handle_intel_cert_hash}
 
     def __handle_intel_addr(self, indicator):
@@ -74,7 +75,7 @@ class bro_intel_indicator_type:
     # We will call this minimalist, but effective.
     def __handle_intel_url(self, indicator):
         ret = False
-        rx = re.compile(r'^https?://'  # http:// or https://
+        rx = re.compile(r'^[https?://]?'  # http:// or https://
                         r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
                         r'localhost|'  # localhost...
                         r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
@@ -109,6 +110,12 @@ class bro_intel_indicator_type:
         return ret
 
     def __handle_intel_user_name(self, indicator):
+        ret = False
+        if len(indicator) > 0:
+            ret = True
+        return ret
+
+    def __handle_intel_file_name(self, indicator):
         ret = False
         if len(indicator) > 0:
             ret = True
@@ -310,20 +317,29 @@ class bro_data_intel_field_values:
 # This is the control class for Bro Intel Feed verification
 #
 class bro_intel_feed_verifier:
-    required_fields = ['indicator',
-                       'indicator_type',
-                       'meta.source',
-                       'meta.desc']
+    stock_required_fields = ['indicator',
+                             'indicator_type',
+                             'meta.source']
+    psled_required_fields = ['indicator',
+                             'indicator_type',
+                             'meta.source',
+                             'meta.desc']
     field_header_designator = '#fields'
     feed_rx = r'([\S]+)'
     feed_sep_rx = r'(\t)+'
 
     header_fields = []
 
-    def __init__(self, feed_file):
-        self.feed_file = feed_file
+    def __init__(self, options):
+        self.feed_file = options.feed_file
+        self.psled = options.psled
         self.__feed_header_found = False
         self.__num_of_fields = 0
+        self.required_fields = bro_intel_feed_verifier.stock_required_fields
+        self.warn_only = options.warn_only
+
+        if self.psled is not None:
+            self.required_fields = bro_intel_feed_verifier.psled_required_fields
 
     def __make_one_indexed(self, l):
         return map(lambda x: x+1, l)
@@ -480,7 +496,7 @@ class bro_intel_feed_verifier:
                     warning_line(index, "Invalid header")
                     sys.exit(2)
             else:
-                if not self.__verify_entry(index, l):
+                if not self.__verify_entry(index, l) and self.warn_only is None:
                     sys.exit(3)
 
 
@@ -490,15 +506,15 @@ class bro_intel_feed_verifier:
 def main():
     parser = OptionParser()
     parser.add_option('-f', '--file', dest='feed_file', help='Bro Intel Feed to Verify')
+    parser.add_option('--psled', action='store_true', dest='psled', help='Verify Intel meets PacketSled requirements')
+    parser.add_option('--warn-only', action='store_true', dest='warn_only', help='Warn ONLY on errors, continue processing and report')
     (options, args) = parser.parse_args()
 
-    for o in options.__dict__.keys():
-        if not options.__dict__[o]:
-            print 'Error: %s not specified' % (o)
-            parser.print_help()
-            sys.exit(1)
+    if sys.argv < 1:
+        parser.print_help()
+        sys.exit(1)
 
-    bifv = bro_intel_feed_verifier(options.feed_file)
+    bifv = bro_intel_feed_verifier(options)
     bifv.verify()
 
 
