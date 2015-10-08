@@ -547,7 +547,7 @@ def main():
     parser.add_option('--warn-only', action='store_true', dest='warn_only', help='Warn ONLY on errors, continue processing and report')
     (options, args) = parser.parse_args()
 
-    if sys.argv < 1:
+    if len(sys.argv) < 2:
         parser.print_help()
         sys.exit(1)
 
