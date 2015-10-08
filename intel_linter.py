@@ -303,18 +303,18 @@ class bro_data_intel_field_values:
         return ret
 
     def verify_meta_severity(self, t):
-        ret = (bro_intel_indicator_return.ERROR, 'Invalid severity - %s' % (t))
+        ret = (bro_intel_indicator_return.ERROR, 'Invalid severity - %s (valid: 1-10)' % (t))
         try:
             t_int = int(t)
             if isinstance(t_int, (int, long)) and (t_int > 0 and t_int < 10):
                 ret = (bro_intel_indicator_return.OKAY, None)
         except ValueError:
-            ret = (bro_intel_indicator_return.ERROR, 'Invalid severity - %s' % (t))
+            ret = (bro_intel_indicator_return.ERROR, 'Invalid severity - %s  (valid: 1-10)' % (t))
         return ret
 
     def verify_meta_cif_severity(self, t):
-        ret = (bro_intel_indicator_return.ERROR, 'Invalid cif_severity - %s' % (t))
         VALID_SEVERITY = ['-', 'low', 'medium', 'med', 'high']
+        ret = (bro_intel_indicator_return.ERROR, 'Invalid cif_severity - %s (valid: %s)' % (t, ','.join(VALID_SEVERITY))
         if t in VALID_SEVERITY:
             ret = (bro_intel_indicator_return.OKAY, None)
         return ret
