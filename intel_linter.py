@@ -11,6 +11,7 @@
 # 9-1-2015      Added column-based type verifications              Aaron Eppert
 # 9-25-2015     Verify printable characters and escape in error    Aaron Eppert
 # 10-7-2015     Added --psled and --warn-only options              Aaron Eppert
+# 10-8-2015     Additional details - WARNING vs ERROR              Aaron Eppert
 #
 import sys
 import re
@@ -45,6 +46,12 @@ def hex_escape(s):
     return ''.join(escape(c) for c in s)
 
 
+class bro_intel_indicator_return:
+    OKAY    = 0
+    WARNING = 1
+    ERROR   = 2
+
+
 ###############################################################################
 # class bro_intel_indicator_type
 #
@@ -64,92 +71,96 @@ class bro_intel_indicator_type:
                                          'Intel::CERT_HASH':    self.__handle_intel_cert_hash}
 
     def __handle_intel_addr(self, indicator):
-        ret = True
+        ret = (bro_intel_indicator_return.OKAY, None)
         import socket
         try:
             socket.inet_aton(indicator)
         except socket.error:
-            ret = False
+            ret = (bro_intel_indicator_return.ERROR, 'Invalid IP address')
         return ret
 
     # We will call this minimalist, but effective.
     def __handle_intel_url(self, indicator):
-        ret = False
-        rx = re.compile(r'^[https?://]?'  # http:// or https://
-                        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
-                        r'localhost|'  # localhost...
-                        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
-                        r'(?::\d+)?'  # optional port
-                        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
-        t = rx.search(indicator)
-        if t:
-            ret = True
+        ret = (bro_intel_indicator_return.OKAY, None)
+
+        t_uri_present = re.findall(r'^https?://', indicator)
+        if t_uri_present is not None and len(t_uri_present) > 0:
+            ret = (bro_intel_indicator_return.WARNING, 'URI present (e.g. http(s)://)')
+        else:
+            rx = re.compile(r'^[https?://]?'  # http:// or https://
+                            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
+                            r'localhost|'  # localhost...
+                            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+                            r'(?::\d+)?'  # optional port
+                            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+            t = rx.search(indicator)
+            if t:
+                ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
     def __handle_intel_email(self, indicator):
-        ret = False
+        ret = (bro_intel_indicator_return.WARNING, 'Invalid email address')
         rx = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
         t_email = re.findall(rx, indicator)
         if len(t_email) > 0:
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
     def __handle_intel_software(self, indicator):
-        ret = False
+        ret = (bro_intel_indicator_return.WARNING, 'Invalid software string')
         if len(indicator) > 0:
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
     def __handle_intel_domain(self, indicator):
-        ret = False
+        ret = (bro_intel_indicator_return.OKAY, 'Invalid domain name')
         rx = r'(?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]{2,63}$)'
         t_domain = re.findall(rx, indicator)
         if len(t_domain) > 0:
             if indicator in t_domain[0]:
-                ret = True
+                ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
     def __handle_intel_user_name(self, indicator):
-        ret = False
+        ret = (bro_intel_indicator_return.WARNING, 'Invalid username - %s' % (indicator))
         if len(indicator) > 0:
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
     def __handle_intel_file_name(self, indicator):
-        ret = False
+        ret = (bro_intel_indicator_return.OKAY, 'Invalid username length')
         if len(indicator) > 0:
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
     # Pretty weak, but should suffice for now.
     def __handle_intel_file_hash(self, indicator):
-        ret = False
+        ret = (bro_intel_indicator_return.OKAY, 'Invalid hash length')
         VALID_HASH_LEN = {32: 'md5',
                           40: 'sha1',
                           64: 'sha256'}
         if VALID_HASH_LEN.get(len(indicator), None):
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
     def __handle_intel_cert_hash(self, indicator):
-        warning('Intel::CERT_HASH - Needs additional validation')
-        return True
+        return (bro_intel_indicator_return.WARNING, 'Intel::CERT_HASH - Needs additional validation')
 
     def verify_indicator_type(self, indicator_type):
-        ret = False
+        ret = (bro_intel_indicator_return.ERROR, 'Invalid indicator - %s' % (indicator_type))
         it = self.__INDICATOR_TYPE_handler.get(indicator_type, None)
         if it is not None:
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
     def correlate(self, indicator, indicator_type):
-        ret = False
+        ret = (bro_intel_indicator_return.WARNING, 'Could not correlate - %s with %s' % (indicator, indicator_type))
         if len(indicator) > 1 and len(indicator_type) > 1:
             h = self.__INDICATOR_TYPE_handler.get(indicator_type, None)
             if h:
                 ret = h(indicator)
             else:
-                ret = True
+                ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
 
@@ -217,9 +228,9 @@ class bro_data_intel_field_values:
         return self.EMPTY_FIELD_CHAR in t
 
     def verify_indicator(self, t):
-        ret = False
+        ret = (bro_intel_indicator_return.ERROR, 'Invalid indicator - %s' % (t))
         if len(t) > 1 and self.__verify_chars(t):
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
     def verify_indicator_type(self, t):
@@ -229,85 +240,93 @@ class bro_data_intel_field_values:
         return self.biit.correlate(i, it)
 
     def verify_meta_do_notice(self, t):
-        return t in bro_data_intel_field_values.META_DO_NOTICE
+        ret = (bro_intel_indicator_return.OKAY, None)
+        t_ret = t in bro_data_intel_field_values.META_DO_NOTICE
+        if not t_ret:
+            ret = (bro_intel_indicator_return.ERROR, 'Invalid do_notice - %s' % (str(t)))
+        return ret
 
     def verify_meta_if_in(self, t):
-        return t in bro_data_intel_field_values.META_IF_IN
+        ret = (bro_intel_indicator_return.OKAY, None)
+        t_ret = t in bro_data_intel_field_values.META_IF_IN
+        if not t_ret:
+            ret = (bro_intel_indicator_return.ERROR, 'Invalid if_in - %s' % (str(t)))
+        return ret
 
     def verify_meta_cif_confidence(self, t):
-        ret = False
+        ret = (bro_intel_indicator_return.ERROR, 'Invalid confidence - %s - Needs to be 1-100' % (str(t)))
         try:
             t_int = int(t)
             if isinstance(t_int, (int, long)) and (t_int > 0 and t_int < 100):
-                ret = True
+                ret = (bro_intel_indicator_return.OKAY, None)
         except ValueError:
-            ret = False
+            ret = (bro_intel_indicator_return.ERROR, 'Invalid confidence - %s - Needs to be 1-100' % (str(t)))
         return ret
 
     def verify_meta_desc(self, t):
-        ret = False
+        ret = (bro_intel_indicator_return.WARNING, 'Invalid desc - %s' % (t))
         if self.__is_ignore_field(t):
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         elif len(t) > 1 and self.__verify_chars(t):
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
     def verify_meta_source(self, t):
-        ret = False
+        ret = (bro_intel_indicator_return.WARNING, 'Invalid source - %s' % (t))
         if self.__is_ignore_field(t):
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         elif len(t) > 1 and self.__verify_chars(t):
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
     def verify_meta_url(self, t):
-        ret = False
+        ret = (bro_intel_indicator_return.WARNING, 'Invalid url - %s' % (t))
         if self.__is_ignore_field(t):
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         elif len(t) > 1 and self.__verify_chars(t):
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
     def verify_meta_whitelist(self, t):
-        ret = False
+        ret = (bro_intel_indicator_return.OKAY, 'Invalid whitelist - %s' % (t))
         if self.__is_ignore_field(t):
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         elif len(t) > 1 and self.__verify_chars(t):
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
     def verify_meta_severity(self, t):
-        ret = False
+        ret = (bro_intel_indicator_return.ERROR, 'Invalid severity - %s' % (t))
         try:
             t_int = int(t)
             if isinstance(t_int, (int, long)) and (t_int > 0 and t_int < 10):
-                ret = True
+                ret = (bro_intel_indicator_return.OKAY, None)
         except ValueError:
-            ret = False
+            ret = (bro_intel_indicator_return.ERROR, 'Invalid severity - %s' % (t))
         return ret
 
     def verify_meta_cif_severity(self, t):
-        ret = False
+        ret = (bro_intel_indicator_return.ERROR, 'Invalid cif_severity - %s' % (t))
         VALID_SEVERITY = ['-', 'low', 'medium', 'med', 'high']
         if t in VALID_SEVERITY:
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
     def verify_meta_cif_impact(self, t):
-        ret = False
+        ret = (bro_intel_indicator_return.WARNING, 'Invalid cif_impact - %s' % (t))
         if self.__is_ignore_field(t):
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         elif len(t) > 1 and self.__verify_chars(t):
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
     def default(self, t):
-        ret = False
+        ret = (bro_intel_indicator_return.WARNING, 'Invalid - %s' % (t))
         warning("Running default handler for: %s" % (t))
         if self.__is_ignore_field(t):
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         elif len(t) > 1 and self.__verify_chars(t):
-            ret = True
+            ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
 
@@ -427,7 +446,8 @@ class bro_intel_feed_verifier:
         return ret
 
     def __verify_fields(self, index, content):
-        ret = True
+        ret = (bro_intel_indicator_return.OKAY, None)
+        reason = ''
         _fields_to_process = {}
         validator = bro_data_intel_field_values()
 
@@ -440,16 +460,15 @@ class bro_intel_feed_verifier:
             _fields_to_process[self.header_fields[content_index]] = t
 
         for k in _fields_to_process:
-            r = validator.get_verifier(k)(_fields_to_process[k])
+            ret = validator.get_verifier(k)(_fields_to_process[k])
 
-            if not r:
+            if len(ret) > 0 and ret[0] != bro_intel_indicator_return.OKAY:
                 if all(ord(l) > 31 and ord(l) < 127 and l in string.printable for l in k):
                     t_line = str(_fields_to_process[k])
                     t_line = hex_escape(t_line)
                     warning_line(index, 'Invalid entry \"%s\" for column \"%s\"' % (str(t_line), str(k)))
                 else:
                     warning_line(index, 'Unprintable character found for column \"%s\"' % (str(k)))
-                ret = False
                 break
 
         if ret:
@@ -457,20 +476,25 @@ class bro_intel_feed_verifier:
             c = validator.correlate_indictor_and_indicator_type(_fields_to_process['indicator'],
                                                                 _fields_to_process['indicator_type'])
 
-            if not c:
-                warning_line(index, 'Indicator type \"%s\" does not correlate with indicator: \"%s\"' % (_fields_to_process['indicator_type'], _fields_to_process['indicator']))
-                ret = False
+            if c is not None and c[0] != bro_intel_indicator_return.OKAY:
+                warning_line(index, 'Indicator type \"%s\" possible issue with indicator: \"%s\"' % (_fields_to_process['indicator_type'], _fields_to_process['indicator']))
+                warning_line(index, 'Details - %s' % c[1])
+                ret = ret = (bro_intel_indicator_return.ERROR, None)
         return ret
 
     def __verify_entry(self, index, l):
-        ret = False
+        ret = (bro_intel_indicator_return.WARNING, '')
         contents = self.__get_field_contents(l)
         _content_field_count = self.__verify_field_count(contents)
         _warn_str = None
 
         if _content_field_count == 0:
-            if self.__verify_field_sep(index, l) and self.__verify_non_space(index, contents) and self.__verify_fields(index, contents):
-                ret = True
+            if self.__verify_field_sep(index, l) and self.__verify_non_space(index, contents):
+                ret_vf = self.__verify_fields(index, contents)
+                if ret_vf is not None and ret_vf[0] == bro_intel_indicator_return.OKAY:
+                    ret = ret_vf
+                else:
+                    _warn_str = ret_vf[1]
         elif _content_field_count > 0:
             _warn_str = 'Invalid number of fields - Found: %d, Header Fields: %d - Look for: EXTRA fields or tab seperators' % (len(contents), self.__num_of_fields)
         elif _content_field_count < 0:
@@ -496,7 +520,8 @@ class bro_intel_feed_verifier:
                     warning_line(index, "Invalid header")
                     sys.exit(2)
             else:
-                if not self.__verify_entry(index, l) and self.warn_only is None:
+                t_ret = self.__verify_entry(index, l)
+                if t_ret[0] == bro_intel_indicator_return.ERROR and self.warn_only is None:
                     sys.exit(3)
 
 
