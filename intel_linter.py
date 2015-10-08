@@ -19,7 +19,7 @@ import string
 from optparse import OptionParser
 
 
-def warning(msg):
+def write_stderr(msg):
     sys.stderr.write(msg + '\n')
 
 
@@ -27,7 +27,14 @@ def warning_line(line, *objs):
     out = 'WARNING: Line %d - ' % (int(line)+1)
     for o in objs:
         out += o
-    warning(out)
+    write_stderr(out)
+
+
+def error_line(line, *objs):
+    out = 'ERROR: Line %d - ' % (int(line)+1)
+    for o in objs:
+        out += o
+    write_stderr(out)
 
 
 def escape(c):
@@ -476,33 +483,27 @@ class bro_intel_feed_verifier:
             c = validator.correlate_indictor_and_indicator_type(_fields_to_process['indicator'],
                                                                 _fields_to_process['indicator_type'])
 
-            if c is not None and c[0] != bro_intel_indicator_return.OKAY:
-                warning_line(index, 'Indicator type \"%s\" possible issue with indicator: \"%s\"' % (_fields_to_process['indicator_type'], _fields_to_process['indicator']))
-                warning_line(index, 'Details - %s' % c[1])
-                ret = ret = (bro_intel_indicator_return.ERROR, None)
+            if c is not None:
+                if c[0] == bro_intel_indicator_return.WARNING:
+                    warning_line(index, 'Indicator type \"%s\" possible issue with indicator: \"%s\"' % (_fields_to_process['indicator_type'], _fields_to_process['indicator']))
+                elif c[0] == bro_intel_indicator_return.ERROR:
+                    error_line(index, 'Indicator type \"%s\" possible issue with indicator: \"%s\"' % (_fields_to_process['indicator_type'], _fields_to_process['indicator']))
+            ret = c
         return ret
 
     def __verify_entry(self, index, l):
-        ret = (bro_intel_indicator_return.WARNING, '')
+        ret = (bro_intel_indicator_return.ERROR, '')
         contents = self.__get_field_contents(l)
         _content_field_count = self.__verify_field_count(contents)
         _warn_str = None
 
         if _content_field_count == 0:
             if self.__verify_field_sep(index, l) and self.__verify_non_space(index, contents):
-                ret_vf = self.__verify_fields(index, contents)
-                if ret_vf is not None and ret_vf[0] == bro_intel_indicator_return.OKAY:
-                    ret = ret_vf
-                else:
-                    _warn_str = ret_vf[1]
+                ret = self.__verify_fields(index, contents)
         elif _content_field_count > 0:
-            _warn_str = 'Invalid number of fields - Found: %d, Header Fields: %d - Look for: EXTRA fields or tab seperators' % (len(contents), self.__num_of_fields)
+            ret = (bro_intel_indicator_return.ERROR, 'Invalid number of fields - Found: %d, Header Fields: %d - Look for: EXTRA fields or tab seperators' % (len(contents), self.__num_of_fields))
         elif _content_field_count < 0:
-            _warn_str = 'Invalid number of fields - Found: %d, Header Fields: %d - Look for: EMPTY fields' % (len(contents), self.__num_of_fields)
-
-        if _warn_str:
-            warning_line(index, _warn_str)
-
+            ret = (bro_intel_indicator_return.ERROR, 'Invalid number of fields - Found: %d, Header Fields: %d - Look for: EMPTY fields' % (len(contents), self.__num_of_fields))
         return ret
 
     def __load_feed(self, feed):
@@ -512,17 +513,28 @@ class bro_intel_feed_verifier:
                 if len(t_line):
                     yield t_line
 
+    def __handle_reporting(self, index, c):
+        if c is not None:
+            if c[0] == bro_intel_indicator_return.ERROR:
+                error_line(index, 'Details - %s' % (c[1]))
+
+            elif c[0] == bro_intel_indicator_return.WARNING:
+                warning_line(index, c[1])
+
     def verify(self):
         for index, l in enumerate(self.__load_feed(self.feed_file)):
             # Check the header
             if index == 0:
                 if not self.__verify_header(index, l):
-                    warning_line(index, "Invalid header")
+                    error_line(index, "Invalid header")
                     sys.exit(2)
             else:
                 t_ret = self.__verify_entry(index, l)
-                if t_ret[0] == bro_intel_indicator_return.ERROR and self.warn_only is None:
-                    sys.exit(3)
+                if t_ret[0] != bro_intel_indicator_return.OKAY:
+                    self.__handle_reporting(index, t_ret)
+
+                    if t_ret[0] == bro_intel_indicator_return.ERROR and self.warn_only is None:
+                        sys.exit(3)
 
 
 ###############################################################################
