@@ -120,7 +120,7 @@ class bro_intel_indicator_type:
         return ret
 
     def __handle_intel_domain(self, indicator):
-        ret = (bro_intel_indicator_return.OKAY, 'Invalid domain name')
+        ret = (bro_intel_indicator_return.WARNING, 'Invalid domain name')
         rx = r'(?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]{2,63}$)'
         t_domain = re.findall(rx, indicator)
         if len(t_domain) > 0:
@@ -135,14 +135,14 @@ class bro_intel_indicator_type:
         return ret
 
     def __handle_intel_file_name(self, indicator):
-        ret = (bro_intel_indicator_return.OKAY, 'Invalid username length')
+        ret = (bro_intel_indicator_return.WARNING, 'Invalid username length')
         if len(indicator) > 0:
             ret = (bro_intel_indicator_return.OKAY, None)
         return ret
 
     # Pretty weak, but should suffice for now.
     def __handle_intel_file_hash(self, indicator):
-        ret = (bro_intel_indicator_return.OKAY, 'Invalid hash length')
+        ret = (bro_intel_indicator_return.WARNING, 'Invalid hash length')
         VALID_HASH_LEN = {32: 'md5',
                           40: 'sha1',
                           64: 'sha256'}
