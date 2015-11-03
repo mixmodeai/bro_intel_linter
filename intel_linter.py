@@ -314,7 +314,7 @@ class bro_data_intel_field_values:
 
     def verify_meta_cif_severity(self, t):
         VALID_SEVERITY = ['-', 'low', 'medium', 'med', 'high']
-        ret = (bro_intel_indicator_return.ERROR, 'Invalid cif_severity - %s (valid: %s)' % (t, ','.join(VALID_SEVERITY))
+        ret = (bro_intel_indicator_return.ERROR, 'Invalid cif_severity - %s (valid: %s)' % (t, ','.join(VALID_SEVERITY)))
         if t in VALID_SEVERITY:
             ret = (bro_intel_indicator_return.OKAY, None)
         return ret
