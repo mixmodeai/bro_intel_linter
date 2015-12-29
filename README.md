@@ -1,5 +1,5 @@
-# bro_intel_linter
-Bro Intel Feed Linter
+![PacketSled Logo](https://packetsled.com/wp-content/themes/freshbiz/img/packetsled-logo.png)
+# Bro Intel Feed Linter
 The bro_intel_linter was built to verify all the appropriate header delineation and mandatory field verification, tab separation, correlation of indicator and indicator_type. 
 
 ## Usage
