@@ -3,15 +3,16 @@
 # PacketSled - Bro Intel Linter
 #
 # WHEN          WHAT                                               WHO
-# 3-4-2015      Initial development                                Aaron Eppert
-# 8-24-2015     Explicitly verify single character fields          Aaron Eppert
-# 8-24-2015     GPL and pushed to GitHub                           Aaron Eppert
-# 8-25-2015     Small cleanups and proper exit codes for using
+# 03-04-2015      Initial development                                Aaron Eppert
+# 08-24-2015     Explicitly verify single character fields          Aaron Eppert
+# 08-24-2015     GPL and pushed to GitHub                           Aaron Eppert
+# 08-25-2015     Small cleanups and proper exit codes for using
 #               as a git pre-commit hook                           Aaron Eppert
-# 9-1-2015      Added column-based type verifications              Aaron Eppert
-# 9-25-2015     Verify printable characters and escape in error    Aaron Eppert
-# 10-7-2015     Added --psled and --warn-only options              Aaron Eppert
-# 10-8-2015     Additional details - WARNING vs ERROR              Aaron Eppert
+# 09-01-2015      Added column-based type verifications              Aaron Eppert
+# 09-25-2015     Verify printable characters and escape in error    Aaron Eppert
+# 10-07-2015     Added --psled and --warn-only options              Aaron Eppert
+# 10-08-2015     Additional details - WARNING vs ERROR              Aaron Eppert
+# 03-03-2016     minor bugfix                                       Peter McKay
 #
 import sys
 import re
@@ -329,7 +330,7 @@ class bro_data_intel_field_values:
 
     def default(self, t):
         ret = (bro_intel_indicator_return.WARNING, 'Invalid - %s' % (t))
-        warning("Running default handler for: %s" % (t))
+        write_stderr("Running default handler for: %s" % (t))
         if self.__is_ignore_field(t):
             ret = (bro_intel_indicator_return.OKAY, None)
         elif len(t) > 1 and self.__verify_chars(t):
@@ -447,7 +448,7 @@ class bro_intel_feed_verifier:
                     ret = True
                     self.__feed_header_found = True
                 else:
-                    warning("Invalid field separator found in header. Must be a tab.")
+                    write_stderr("Invalid field separator found in header. Must be a tab.")
             else:
                 warning_line(index, "Duplicate header found")
         return ret
