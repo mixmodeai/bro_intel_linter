@@ -7,7 +7,7 @@
 # 08-24-2015    Explicitly verify single character fields          Aaron Eppert
 # 08-24-2015    GPL and pushed to GitHub                           Aaron Eppert
 # 08-25-2015    Small cleanups and proper exit codes for using
-#                as a git pre-commit hook                           Aaron Eppert
+#                as a git pre-commit hook                          Aaron Eppert
 # 09-01-2015    Added column-based type verifications              Aaron Eppert
 # 09-25-2015    Verify printable characters and escape in error    Aaron Eppert
 # 10-07-2015    Added --psled and --warn-only options              Aaron Eppert
