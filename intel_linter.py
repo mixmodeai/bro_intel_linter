@@ -3,16 +3,16 @@
 # PacketSled - Bro Intel Linter
 #
 # WHEN          WHAT                                               WHO
-# 03-04-2015      Initial development                                Aaron Eppert
-# 08-24-2015     Explicitly verify single character fields          Aaron Eppert
-# 08-24-2015     GPL and pushed to GitHub                           Aaron Eppert
-# 08-25-2015     Small cleanups and proper exit codes for using
-#               as a git pre-commit hook                           Aaron Eppert
-# 09-01-2015      Added column-based type verifications              Aaron Eppert
-# 09-25-2015     Verify printable characters and escape in error    Aaron Eppert
-# 10-07-2015     Added --psled and --warn-only options              Aaron Eppert
-# 10-08-2015     Additional details - WARNING vs ERROR              Aaron Eppert
-# 03-03-2016     minor bugfix                                       Peter McKay
+# 03-04-2015    Initial development                                Aaron Eppert
+# 08-24-2015    Explicitly verify single character fields          Aaron Eppert
+# 08-24-2015    GPL and pushed to GitHub                           Aaron Eppert
+# 08-25-2015    Small cleanups and proper exit codes for using
+#                as a git pre-commit hook                           Aaron Eppert
+# 09-01-2015    Added column-based type verifications              Aaron Eppert
+# 09-25-2015    Verify printable characters and escape in error    Aaron Eppert
+# 10-07-2015    Added --psled and --warn-only options              Aaron Eppert
+# 10-08-2015    Additional details - WARNING vs ERROR              Aaron Eppert
+# 03-03-2016    Minor bugfix                                       Peter McKay
 #
 import sys
 import re
