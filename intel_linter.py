@@ -13,6 +13,7 @@
 # 10-07-2015    Added --psled and --warn-only options              Aaron Eppert
 # 10-08-2015    Additional details - WARNING vs ERROR              Aaron Eppert
 # 03-03-2016    Minor bugfix                                       Peter McKay
+# 04-08-2016    Added Intel::NET support                           Aaron Eppert
 #
 import sys
 import re
@@ -69,6 +70,7 @@ class bro_intel_indicator_return:
 class bro_intel_indicator_type:
     def __init__(self):
         self.__INDICATOR_TYPE_handler = {'Intel::ADDR':         self.__handle_intel_addr,
+                                         'Intel::NET':          self.__handle_intel_net,
                                          'Intel::URL':          self.__handle_intel_url,
                                          'Intel::SOFTWARE':     self.__handle_intel_software,
                                          'Intel::EMAIL':        self.__handle_intel_email,
@@ -85,6 +87,25 @@ class bro_intel_indicator_type:
             socket.inet_aton(indicator)
         except socket.error:
             ret = (bro_intel_indicator_return.ERROR, 'Invalid IP address')
+        return ret
+
+    # In an effort to keep this script minimal and without requiring external
+    # libraries, we will verify an Intel::NET simply as:
+    #
+    # 0 <= octet < 255
+    # 0 <= netmask <= 32
+    #
+    def __handle_intel_net(self, indicator):
+        ret = (bro_intel_indicator_return.OKAY, None)
+        if '/' in indicator:
+            addr, net = indicator.split('/')
+            if all([(int(x) >= 0 and int(x) < 255) for x in addr.split('.')]):
+                if not (int(net) >= 0 and int(x) <= 32):
+                    ret = (bro_intel_indicator_return.ERROR, 'Invalid network block designation')
+            else:
+                ret = (bro_intel_indicator_return.ERROR, 'Invalid network address')
+        else:
+            ret = (bro_intel_indicator_return.ERROR, 'Invalid network designation')
         return ret
 
     # We will call this minimalist, but effective.
