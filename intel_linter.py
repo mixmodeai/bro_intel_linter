@@ -14,6 +14,7 @@
 # 10-08-2015    Additional details - WARNING vs ERROR              Aaron Eppert
 # 03-03-2016    Minor bugfix                                       Peter McKay
 # 04-08-2016    Added Intel::NET support                           Aaron Eppert
+# 06-02-2017    Fixed line ending issue                            Aaron Eppert
 #
 import sys
 import re
@@ -532,6 +533,7 @@ class bro_intel_feed_verifier:
         with open(feed) as f:
             for line in f:
                 t_line = line.rstrip('\n')
+                t_line = t_line.rstrip('\r')
                 if len(t_line):
                     yield t_line
 
