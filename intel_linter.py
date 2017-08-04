@@ -532,8 +532,7 @@ class bro_intel_feed_verifier:
     def __load_feed(self, feed):
         with open(feed) as f:
             for line in f:
-                t_line = line.rstrip('\n')
-                t_line = t_line.rstrip('\r')
+                t_line = line.rstrip('\r\n')
                 if len(t_line):
                     yield t_line
 
