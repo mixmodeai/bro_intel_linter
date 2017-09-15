@@ -15,6 +15,7 @@
 # 03-03-2016    Minor bugfix                                       Peter McKay
 # 04-08-2016    Added Intel::NET support                           Aaron Eppert
 # 06-02-2017    Fixed line ending issue                            Aaron Eppert
+# 09-15-2017    Changed Intel::NET to Intel::SUBNET                Kory Kyzar
 #
 import sys
 import re
@@ -71,7 +72,7 @@ class bro_intel_indicator_return:
 class bro_intel_indicator_type:
     def __init__(self):
         self.__INDICATOR_TYPE_handler = {'Intel::ADDR':         self.__handle_intel_addr,
-                                         'Intel::NET':          self.__handle_intel_net,
+                                         'Intel::SUBNET':       self.__handle_intel_subnet,
                                          'Intel::URL':          self.__handle_intel_url,
                                          'Intel::SOFTWARE':     self.__handle_intel_software,
                                          'Intel::EMAIL':        self.__handle_intel_email,
@@ -91,12 +92,12 @@ class bro_intel_indicator_type:
         return ret
 
     # In an effort to keep this script minimal and without requiring external
-    # libraries, we will verify an Intel::NET simply as:
+    # libraries, we will verify an Intel::SUBNET simply as:
     #
     # 0 <= octet < 255
     # 0 <= netmask <= 32
     #
-    def __handle_intel_net(self, indicator):
+    def __handle_intel_subnet(self, indicator):
         ret = (bro_intel_indicator_return.OKAY, None)
         if '/' in indicator:
             addr, net = indicator.split('/')
