@@ -15,6 +15,7 @@
 # 03-03-2016    Minor bugfix                                       Peter McKay
 # 04-08-2016    Added Intel::NET support                           Aaron Eppert
 # 06-02-2017    Fixed line ending issue                            Aaron Eppert
+# 03-28-2018    Fixed IPv6 validation                              Aaron Eppert
 #
 import sys
 import re
@@ -81,14 +82,38 @@ class bro_intel_indicator_type:
                                          'Intel::FILE_NAME':    self.__handle_intel_file_name,
                                          'Intel::CERT_HASH':    self.__handle_intel_cert_hash}
 
-    def __handle_intel_addr(self, indicator):
-        ret = (bro_intel_indicator_return.OKAY, None)
+    # Source: https://stackoverflow.com/questions/319279/how-to-validate-ip-address-in-python
+    def __is_valid_ipv4_address(self, address):
+        import socket
+
+        try:
+            socket.inet_pton(socket.AF_INET, address)
+        except AttributeError:  # no inet_pton here, sorry
+            try:
+                socket.inet_aton(address)
+            except socket.error:
+                return False
+            return address.count('.') == 3
+        except socket.error:  # not a valid address
+            return False
+
+        return True
+
+    # Source: https://stackoverflow.com/questions/319279/how-to-validate-ip-address-in-python
+    def __is_valid_ipv6_address(self, address):
         import socket
         try:
-            socket.inet_aton(indicator)
-        except socket.error:
-            ret = (bro_intel_indicator_return.ERROR, 'Invalid IP address')
-        return ret
+            socket.inet_pton(socket.AF_INET6, address)
+        except socket.error:  # not a valid address
+            return False
+        return True
+
+    def __handle_intel_addr(self, indicator):
+        ret = (bro_intel_indicator_return.OKAY, None)
+       
+        if self.__is_valid_ipv4_address(indicator) or self.__is_valid_ipv6_address(indicator):
+            return ret
+        return  (bro_intel_indicator_return.ERROR, 'Invalid IP address')
 
     # In an effort to keep this script minimal and without requiring external
     # libraries, we will verify an Intel::NET simply as:
