@@ -209,7 +209,10 @@ class bro_intel_indicator_type:
         return (bro_intel_indicator_return.WARNING, 'Intel::PUBKEY_HASH - Needs additional validation')
 
     def __handle_intel_ja3_hash(self, indicator):
-        return (bro_intel_indicator_return.WARNING, 'Intel::JA3 - Needs additional validation')
+        ret = (bro_intel_indicator_return.WARNING, 'Intel::JA3 - Needs additional validation')
+        if len(indicator) == 32:
+            ret = (bro_intel_indicator_return.OKAY, None)
+        return ret
 
     def verify_indicator_type(self, indicator_type):
         ret = (bro_intel_indicator_return.ERROR, 'Invalid indicator - %s' % (indicator_type))
