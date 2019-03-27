@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# PacketSled - Bro Intel Linter
+# MixMode.ai - Bro Intel Linter
 #
 # WHEN          WHAT                                               WHO
 # 03-04-2015    Initial development                                Aaron Eppert
@@ -17,6 +17,7 @@
 # 06-02-2017    Fixed line ending issue                            Aaron Eppert
 # 09-15-2017    Changed Intel::NET to Intel::SUBNET                Kory Kyzar
 # 03-28-2018    Fixed IPv6 validation                              Aaron Eppert
+# 03-27-2019    Add Intel::PUBKEY_HASH and Intel::JA3              Aaron Eppert
 #
 import sys
 import re
@@ -81,7 +82,9 @@ class bro_intel_indicator_type:
                                          'Intel::USER_NAME':    self.__handle_intel_user_name,
                                          'Intel::FILE_HASH':    self.__handle_intel_file_hash,
                                          'Intel::FILE_NAME':    self.__handle_intel_file_name,
-                                         'Intel::CERT_HASH':    self.__handle_intel_cert_hash}
+                                         'Intel::CERT_HASH':    self.__handle_intel_cert_hash,
+                                         'Intel::PUBKEY_HASH':  self.__handle_intel_pubkey_hash,
+                                         'Intel::JA3':          self.__handle_intel_ja3_hash}
 
     # Source: https://stackoverflow.com/questions/319279/how-to-validate-ip-address-in-python
     def __is_valid_ipv4_address(self, address):
@@ -201,6 +204,12 @@ class bro_intel_indicator_type:
 
     def __handle_intel_cert_hash(self, indicator):
         return (bro_intel_indicator_return.WARNING, 'Intel::CERT_HASH - Needs additional validation')
+
+    def __handle_intel_pubkey_hash(self, indicator):
+        return (bro_intel_indicator_return.WARNING, 'Intel::PUBKEY_HASH - Needs additional validation')
+
+    def __handle_intel_ja3_hash(self, indicator):
+        return (bro_intel_indicator_return.WARNING, 'Intel::JA3 - Needs additional validation')
 
     def verify_indicator_type(self, indicator_type):
         ret = (bro_intel_indicator_return.ERROR, 'Invalid indicator - %s' % (indicator_type))
