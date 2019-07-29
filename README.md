@@ -1,6 +1,8 @@
-![PacketSled Logo](https://packetsled.com/wp-content/themes/freshbiz/img/packetsled-logo.png)
-# Bro Intel Feed Linter
-The bro_intel_linter was built to verify all the appropriate header delineation and mandatory field verification, tab separation, correlation of indicator and indicator_type. 
+
+# Zeek (Bro) Intel Feed Linter
+The nsm_intel_linter was built to verify all the appropriate header delineation and mandatory field verification, tab separation, correlation of indicator and indicator_type. 
+
+Currently supports Zeek (Bro) intelligence feeds.
 
 ## Usage
     intel_linter.py -f <file.intel>
