@@ -18,7 +18,9 @@
 # 09-15-2017    Changed Intel::NET to Intel::SUBNET                Kory Kyzar
 # 03-28-2018    Fixed IPv6 validation                              Aaron Eppert
 # 03-27-2019    Add Intel::PUBKEY_HASH and Intel::JA3              Aaron Eppert
-#
+# 07-13-2019    Add CERT HASH validaion for using regex            Juan Jaramillo
+#               MD5, SHA1, SHA256, SHA512 hashes. 
+
 import sys
 import re
 import string
@@ -135,7 +137,7 @@ class bro_intel_indicator_type:
             else:
                 ret = (bro_intel_indicator_return.ERROR, 'Invalid network address')
         else:
-            ret = (bro_intel_indicator_return.ERROR, 'Invalid network designation')
+                ret = (bro_intel_indicator_return.ERROR, 'Invalid network designation')
         return ret
 
     # We will call this minimalist, but effective.
@@ -203,8 +205,17 @@ class bro_intel_indicator_type:
         return ret
 
     def __handle_intel_cert_hash(self, indicator):
-        return (bro_intel_indicator_return.WARNING, 'Intel::CERT_HASH - Needs additional validation')
-
+        ret = (bro_intel_indicator_return.WARNING, 'Invalid Intel::CERT_HASH - ISSUES %s' % (indicator))
+        hash_present = re.compile(
+                            r'^[0-9A-F]{32}$|'                   # MD5
+                            r'^[0-9A-F]{40}$|'                   # SHA1
+                            r'^[0-9A-F]{64}$|'                   # SHA256
+                            r'^[0-9A-F]{128}$', re.IGNORECASE)   # SHA512
+        t = hash_present.search(indicator)
+        if t:
+            ret = (bro_intel_indicator_return.OKAY, None)                
+        return ret
+  
     def __handle_intel_pubkey_hash(self, indicator):
         return (bro_intel_indicator_return.WARNING, 'Intel::PUBKEY_HASH - Needs additional validation')
 
